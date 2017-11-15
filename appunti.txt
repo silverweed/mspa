@@ -1,0 +1,15 @@
+Per ogni cifra, imparo un classificatore binario F:  1 / non 1, 2 / non 2, ...
+
+Lo faccio tramite Adaboost quindi F = sgn(f(x)), dove f(x) = sum{1->T} (w_i, h_i(x)).
+
+gli h_i sono della forma h_{i, t}(x) = sgn(x_i - t). Uso un h per ogni pixel dell'immagine (28 * 28).
+t e` la soglia del pixel. -> (decision stump: "x_i > t ?")
+
+Come scelgo t?
+
+--
+Ho un set di N cifre S = {x_1, ..., x_N}
+che possono essere 1 o non 1 (per F_1 ad es)
+
+Per ogni h (classificatore di pixel) devo trovare t tale che l'errore di h_{i,t}
+sia minimo

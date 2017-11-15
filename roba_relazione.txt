@@ -1,0 +1,9 @@
+Relazione
+----
+descrivere brevemente adaboost
+descrivere brevemente implem
+" " dataset
+descrivere bene adaboost multiclasse
+comparare base e multiclasse
+considerazioni su risultati (comparare con letteratura)
+grafici rappresentativi fatti __bene__
