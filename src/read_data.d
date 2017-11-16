@@ -8,57 +8,6 @@ import std.typecons;
 import weak_classifier;
 import data;
 
-void main() {
-	immutable trainLabelsFname = "data/train-labels-idx1-ubyte";
-	immutable trainImagesFname = "data/train-images-idx3-ubyte";
-	immutable testLabelsFname = "data/t10k-labels-idx1-ubyte";
-	immutable testImagesFname = "data/t10k-images-idx3-ubyte";
-
-	{
-		/// Train Labels
-		auto trainLabelsFile = File(trainLabelsFname, "r");
-		immutable nItems = getNItemsLabel(trainLabelsFile);
-
-		debug writeln("n items = ", nItems);
-
-		//dumpLabels(trainLabelsFile, nItems);
-	}
-
-	{
-		/// Train Images
-		auto trainImagesFile = File(trainImagesFname, "r");
-		immutable info = getNItemsImages(trainImagesFile);
-
-		debug writeln("n images: ", info.nImg, "\nn rows: ", info.nRows, "\nn cols: ", info.nCols);
-
-		const imgs = getImages(trainImagesFile, new Image[info.nImg], info.nRows, info.nCols);
-
-		//dumpImages(imgs, info);
-	}
-
-	{
-		/// Test Labels
-		auto testLabelsFile = File(testLabelsFname, "r");
-		immutable nItems = getNItemsLabel(testLabelsFile);
-
-		debug writeln("n items = ", nItems);
-
-		//dumpLabels(testLabelsFile, nItems);
-	}
-
-	{
-		/// Test Images
-		auto testImagesFile = File(testImagesFname, "r");
-		immutable info = getNItemsImages(testImagesFile);
-
-		debug writeln("n images: ", info.nImg, "\nn rows: ", info.nRows, "\nn cols: ", info.nCols);
-
-		const imgs = getImages(testImagesFile, new Image[info.nImg], info.nRows, info.nCols);
-
-		dumpImages(imgs, info);
-	}
-}
-
 auto getNItemsLabel(File f) {
 	const buf = f.rawRead(new ubyte[8]);
 
@@ -83,6 +32,10 @@ auto getNItemsImages(File f) {
 	return ImagesInfo(nImg, nRows, nCols);
 }
 
+auto getLabels(File f, uint n) {
+	return f.rawRead(new ubyte[n]);
+}
+
 void dumpLabels(File f, uint n) {
 	const buf = f.rawRead(new ubyte[n]);
 
@@ -90,10 +43,12 @@ void dumpLabels(File f, uint n) {
 	writeln();
 }
 
-auto getImages(File f, Image[] buf, int rows, int cols) {
+auto getImages(File f, in ImagesInfo info) {
+	
+	auto buf = new Image[info.nImg];
 
 	for (int i = 0; i < buf.length; i++) {
-		auto pixels = f.rawRead(new ubyte[rows * cols]);
+		auto pixels = f.rawRead(new ubyte[info.nRows * info.nCols]);
 		buf[i] = pixels;
 	}
 
