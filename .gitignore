@@ -2,3 +2,9 @@
 *~
 *.x
 data/
+*.gz
+*.toc
+*.pdf
+*.log
+*.aux
+*.dvi

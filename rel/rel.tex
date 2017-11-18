@@ -1,0 +1,66 @@
+\documentclass[12pt, letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+
+\newcommand\eqdef{\mathrel{\stackrel{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
+
+\title{Relazione di Metodi Statistici per l'Apprendimento}
+\author{Giacomo Parolini}
+\date{Novembre 2017}
+
+\begin{document}
+
+\begin{titlepage}
+\maketitle
+\end{titlepage}
+
+\begin{abstract}
+\noindent
+Nel seguente progetto ci si propone di applicare l'algoritmo Adaboost al problema del riconoscimento automatico delle cifre scritte a mano. 
+Si utilizzano come {\it weak learner} dei {\it decision stump} della forma
+\begin{center}
+	\( h_\tau(x) = sgn(x - \tau) \)
+\end{center}
+Il dataset utilizzato \`e il MNIST\footnote{http://yann.lecun.com/exdb/mnist/}.
+\end{abstract}
+
+%%%%% 1: DESCRIZIONE DATI
+
+\section{Descrizione dei dati}
+I dati MNIST utilizzati nel corso del progetto sono suddivisi in due tipologie: immagini contenenti le cifre scritte a mano ed etichette che descrivono la cifra contenuta in ogni immagine.
+
+\subsection{Immagini}
+Una singola immagine consiste di un {\it array} di pixel, ognuno rappresentato da un singolo byte senza segno che contiene il "colore" del pixel in scala di grigi (ogni pixel pertanto spazia dal valore 0 al valore 255). Tutte le immagini hanno la stessa altezza e larghezza: 28 x 28 pixel.
+
+\subsection{Etichette}
+Ogni etichetta \`e rappresentata da un singolo byte senza segno che rappresenta una cifra decimale. Pertanto un'etichetta pu\`o contenere solamente valori compresi tra 0 e 9 inclusi.
+
+\subsection{File di dati}
+ Oltre alla suddivisione di tipologia sopra descritta, i dati sono ulteriormente suddivisi in dati di training ({\it training set}) e dati di test ({\it test set}). 
+ Il database MNIST permette quindi di scaricare quattro diversi file:
+\begin{enumerate}
+	\item {\tt train-images-idx3-ubyte}: contiene le immagini di training
+	\item {\tt train-labels-idx1-ubyte}: contiene le etichette associate alle immagini di training
+	\item {\tt test-images-idx3-ubyte}: contiene le immagini di test
+	\item {\tt test-labels-idx1-ubyte}: contiene le etichette associate alle immagini di test
+\end{enumerate}
+Ognuno di questi \`e intestato con un {\it header} che ne descrive il contenuto.
+
+%%%%%% 2: DESCRIZIONE ADABOOST
+
+\section{Adaboost}
+Adaboost ({\it Adaptive Boosting}) \`e un ``meta-algoritmo'' usato per costruire in modo incrementale un classificatore forte a partire da un numero $T$ di classificatori deboli ({\it weak learner}). La potenza di Adaboost \`e data in gran parte dall'essere un metodo generico, ovvero dal non dipendere in modo sostanziale dalla tipologia di {\it weak learner} utilizzata. Per questa ragione, si sceglie spesso di utilizzare {\it weak learner} molto semplici, in modo da minimizzare il peso computazionale dell'algoritmo.
+
+Nel presente progetto utilizziamo dei {\it weak learner} della forma
+\begin{center}
+	\( h_\tau(x) = sgn(x - \tau), \hskip 2em 0 \le \tau \le 255 \)
+\end{center}
+Questi classificatori operano a livello del singolo pixel e hanno come parametro la soglia sulla scurezza del pixel $\tau$ .
+
+Una volta scelti i classificatori base \({h_i}\), Adaboost produce un classificatore che ha la forma
+\begin{center}
+	\[ H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = {\huge \sum\limits_{i=1}^T{w_i h_i(x)}} \]
+\end{center}
+Dove, nel nostro caso, \( x \in [0, 255] \) % ?????? chiedere a cesa-bianchi
+\end{document}
