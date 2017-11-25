@@ -24,7 +24,7 @@ void main() {
 	const xs = getImages(trainImagesFile, info);
 	trainImagesFile.close();
 
-	auto algo = adaboost.adaboost!(1, 18 * 18)(xs, ys);
+	auto algo = adaboost.adaboost!(1, 8 * 8)(xs, ys);
 	debug writeln("Algorithm calculated.");
 
 	for (uint i = 0; i < 100; ++i) {

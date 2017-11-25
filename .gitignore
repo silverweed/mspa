@@ -8,3 +8,5 @@ data/
 *.log
 *.aux
 *.dvi
+trace.def
+trace.html
