@@ -10,6 +10,6 @@ in {
 out (result) {
 	assert(result == 1 || result == -1);
 }
-body {
+do {
 	return h(x) * y;
 }

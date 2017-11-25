@@ -12,6 +12,9 @@ alias image_weak_classifier_t = byte delegate(in Image) pure;
 struct HParams {
 	uint pixel;
 	uint tau;
+	invariant {
+		assert(tau < 256);
+	}
 }
 
 /// Creates a weak classifier given the p and tau parameters

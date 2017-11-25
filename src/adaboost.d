@@ -25,7 +25,7 @@ in {
 	static assert(T > 0);
 	assert(xs.length == ys_in.length);
 }
-body {
+do {
 	const ys = transform!NUM(ys_in);
 
 	immutable m = xs.length;
@@ -99,7 +99,7 @@ out (epsilon) {
 	debug if (epsilon <= 0 || epsilon > 1) writeln("eps = ", epsilon);
 	assert(0 < epsilon && epsilon < 1 - fltErr);
 }
-body {
+do {
 	immutable m = xs.length;
 	const h = make_image_weak_classifier(pixel, tau);
 
@@ -127,7 +127,7 @@ out (result) {
 	assert(0 <= result[0].tau && result[0].tau <= 255);
 	assert(0 < result[1] && result[1] < 1.1);
 }
-body {
+do {
 	import std.algorithm.mutation;
 
 	immutable m = xs.length;
@@ -176,7 +176,7 @@ in {
 out {
 	assert(!(p[0][i + 1].isNaN && p[xs.length - 1][i + 1].isNaN));
 }
-body {
+do {
 	immutable m = xs.length;
 	float_t E_i = 0;
 	version (parallel) {
