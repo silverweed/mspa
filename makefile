@@ -1,4 +1,6 @@
-all:
+all: seq
+
+par:
 	dmd -debug -version=parallel src/*.d -of=main.x
 
 seq:

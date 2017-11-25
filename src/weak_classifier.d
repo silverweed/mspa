@@ -9,6 +9,11 @@ import data;
 /// p and τ are fixed for a single classifier.
 alias image_weak_classifier_t = byte delegate(in Image) pure;
 
+struct HParams {
+	uint pixel;
+	uint tau;
+}
+
 /// Creates a weak classifier given the p and tau parameters
 auto make_image_weak_classifier(uint pixel, ubyte tau) {
 	return (in Image img) => cast(byte)(2 * (img[pixel] > tau) - 1);

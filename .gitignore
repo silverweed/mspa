@@ -10,3 +10,4 @@ data/
 *.dvi
 trace.def
 trace.html
+*.swp
