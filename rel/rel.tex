@@ -31,7 +31,7 @@ Il dataset utilizzato \`e il MNIST\footnote{http://yann.lecun.com/exdb/mnist/}.
 I dati MNIST utilizzati nel corso del progetto sono suddivisi in due tipologie: immagini contenenti le cifre scritte a mano ed etichette che descrivono la cifra contenuta in ogni immagine.
 
 \subsection{Immagini}
-Una singola immagine consiste di un {\it array} di pixel, ognuno rappresentato da un singolo byte senza segno che contiene il "colore" del pixel in scala di grigi (ogni pixel pertanto spazia dal valore 0 al valore 255). Tutte le immagini hanno la stessa altezza e larghezza: 28 x 28 pixel.
+Una singola immagine consiste di un {\it array} di pixel \(\{x_0, \dotsc, x_M\}\), ognuno rappresentato da un singolo byte senza segno che contiene il "colore" del pixel in scala di grigi (ogni pixel pertanto spazia dal valore 0 al valore 255). Tutte le immagini hanno la stessa altezza e larghezza: 28 x 28 pixel.
 
 \subsection{Etichette}
 Ogni etichetta \`e rappresentata da un singolo byte senza segno che rappresenta una cifra decimale. Pertanto un'etichetta pu\`o contenere solamente valori compresi tra 0 e 9 inclusi.
@@ -54,13 +54,13 @@ Adaboost ({\it Adaptive Boosting}) \`e un ``meta-algoritmo'' usato per costruire
 
 Nel presente progetto utilizziamo dei {\it weak learner} della forma
 \begin{center}
-	\( h_\tau(x) = sgn(x - \tau), \hskip 2em 0 \le \tau \le 255 \)
+	\( h^i_{p, \tau}(x) = sgn(x_p - \tau), \hskip 2em 0 \le \tau \le 255, \hskip 0.5em 0 \le p < 784\footnote{\(784 = 28 \times 28\), pari alla dimensione delle immagini considerate come array di pixel.} \)
 \end{center}
-Questi classificatori operano a livello del singolo pixel e hanno come parametro la soglia sulla scurezza del pixel $\tau$ .
+dove \(x = \{x_0, \dotsc, x_{783}\}\) \`e un'immagine del dataset e $p$ e $\tau$ sono parametri che rappresentano rispettivamente l'indice del pixel da considerare e la soglia sulla scurezza di tale pixel.
 
 Una volta scelti i classificatori base \({h_i}\), Adaboost produce un classificatore che ha la forma
-\begin{center}
-	\[ H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = {\huge \sum\limits_{i=1}^T{w_i h_i(x)}} \]
-\end{center}
-Dove, nel nostro caso, \( x \in [0, 255] \) % ?????? chiedere a cesa-bianchi
+
+	\[ H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = {\huge \sum\limits_{i=1}^T{w_i h^i(x)}} \]
+
+Andiamo cos\`i a costruire incrementalmente un classificatore forte di immagini aggiungendo man mano test binari su singoli pixel scelti accuratamente in modo da massimizzare l'efficacia di tali test.
 \end{document}
