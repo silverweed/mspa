@@ -24,13 +24,17 @@ void main() {
 	const xs = getImages(trainImagesFile, info);
 	trainImagesFile.close();
 
-	auto algo = adaboost.adaboost!(1, 8 * 8)(xs, ys);
+	auto algo = adaboost.adaboost!(2, 10)(xs, ys);
 	debug writeln("Algorithm calculated.");
 
+	int ok = 0;
 	for (uint i = 0; i < 100; ++i) {
 		immutable pred = algo(xs[i]);
-		writefln("predicted = %d, real = %d  | %s", pred, ys[i], pred == ys[i]);
+		bool isOk = pred == 2 * (ys[i] == 2) - 1;
+		writefln("predicted = %s, real = %d  | %s", pred > 0 ? "2" : "not 2", ys[i], isOk);
+		if (isOk) ++ok;
 	}
+	writefln("guessed %d out of %d (%f%%)", ok, 100, ok * 100 / 100.0);
 }
 
 void tests() {

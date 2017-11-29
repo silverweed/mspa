@@ -47,7 +47,7 @@ do {
 			writeln("p sum = ", pSum!T(p, i));
 			writeln(abs(pSum!T(p, i) - 1), " vs ", 10 * fltErr);
 		}
-		assert(abs(pSum!T(p, i) - 1) < 10 * fltErr);
+		assert(abs(pSum!T(p, i) - 1) < 20 * fltErr);
 
 		// 1. choose h_i such that e_i is far from 1/2
 		const res = chooseH!T(p, i, xs, ys, chosen);
@@ -73,7 +73,7 @@ do {
 	version (parallel) taskPool.stop();
 
 	return (in Image x) {
-		int sum = 0;
+		float_t sum = 0;
 		for (uint i = 0; i < T; ++i) {
 			debug writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
 			sum += w[i] * h[i](x);
@@ -104,13 +104,24 @@ do {
 	const h = make_image_weak_classifier(pixel, tau);
 
 	float_t eps = 0;
+	//int cnt = 0;
 	for (int t = 0; t < m; ++t) {
 		debug if (p[t][i].isNaN) writeln("p[%d][%d] = %f".format(t, i, p[t][i]));
 		assert(!p[t][i].isNaN);
+		//debug if (i > 0) writeln("loss = ", cast(int)(loss(h, xs[t], ys[t]) == -1), ", p = ", p[t][i]);
+		//if (loss(h, xs[t], ys[t]) == 1) cnt++;
 		eps += (loss(h, xs[t], ys[t]) == -1) * p[t][i];
+		//debug if (i > 0) writeln(t, " eps = ", eps);
 	}
-	//debug writeln("eps = ", eps);
+	//debug writeln("h_{", pixel, ", ", tau, "}:  eps = ", eps, " (cnt = ", cnt, ")");
 	return eps;
+}
+
+void calcEps(uint T)(ref float[HParams] epsilons, in Image[] xs, in byte[] ys,
+		in float_t[T][] p, uint i, uint pixel, ubyte tau)
+{
+	epsilons[HParams(pixel, tau)] = calcEpsilon!T(xs, ys, p, i, pixel, tau);
+	debug writeln("{", pixel, ", ", tau, "} done.");
 }
 
 // Extract an h such that its epsilon is as far from 1/2 as possible
@@ -130,29 +141,56 @@ out (result) {
 do {
 	import std.algorithm.mutation;
 
-	immutable m = xs.length;
+	immutable TAU_STEP = 64;
 
-	// Loop over the weak classifier parameters p and tau.
-	// Choose the combination of parameters which minimizes epsilon.
-	uint pixel = 0;
-	uint tau = 0; // using uint instead of ubyte for proper loop condition check
 	HParams bestPair;
 	auto bestEps = 0.5;
 	bool found = false;
-	for ( ; pixel < xs[0].length; ++pixel) {
-		for ( ; tau < 256; ++tau) {
-			const thisPair = HParams(pixel, tau);
 
-			if (chosen.canFind(thisPair))
-				continue;
+	// Loop over the weak classifier parameters p and tau.
+	// Choose the combination of parameters which minimizes epsilon.
+	version (parallel) {
+		float[HParams] epsilons;
+		
+		for (uint tau = 0; tau < 256; tau += TAU_STEP)
+			for (uint pixel = 0; pixel < xs[0].length; ++pixel) {
+				auto k = HParams(pixel, tau);
+				if (!chosen.canFind(k))
+					epsilons[k] = 0.5;
+			}
 
-			const eps = calcEpsilon!T(xs, ys, p, i, thisPair.pixel, cast(ubyte)thisPair.tau);
+		assert(epsilons.length == 256 / TAU_STEP * xs[0].length - chosen.length);
+		
+		debug writeln("Calculating best of ", epsilons.length, " alternatives...");
+		foreach (_, k; parallel(epsilons.byKey))
+			epsilons[k] = calcEpsilon!T(xs, ys, p, cast(uint)i, k.pixel, cast(ubyte)k.tau);
+		
+		foreach (params, eps; epsilons) {
+			debug (2) writeln("eps{", params.pixel, ", ", params.tau, "} = ", eps);
 			if (abs(eps - 0.5) - abs(bestEps - 0.5) > fltErr) {
-				debug writeln("eps = ", eps, ", best = ", bestEps, "(", abs(eps - 0.5), " vs ", abs(bestEps - 0.5), ")");
-				found = true;
-				debug writeln("assigning bestPair = ", thisPair);
-				bestPair = thisPair;
+				bestPair = params;
 				bestEps = eps;
+				found = true;
+			}
+		}
+
+	} else {
+		for (uint tau = 0; tau < 256; tau += TAU_STEP) {
+			for (uint pixel = 0; pixel < xs[0].length; ++pixel) {
+				const thisPair = HParams(pixel, tau);
+
+				if (chosen.canFind(thisPair))
+					continue;
+
+				const eps = calcEpsilon!T(xs, ys, p, i, thisPair.pixel, cast(ubyte)thisPair.tau);
+				if (abs(eps - 0.5) - abs(bestEps - 0.5) > fltErr) {
+					debug writeln("eps = ", eps, ", best = ", bestEps,
+							"(", abs(eps - 0.5), " vs ", abs(bestEps - 0.5), ")");
+					found = true;
+					debug writeln("assigning bestPair = ", thisPair);
+					bestPair = thisPair;
+					bestEps = eps;
+				}
 			}
 		}
 	}
@@ -179,35 +217,19 @@ out {
 do {
 	immutable m = xs.length;
 	float_t E_i = 0;
-	version (parallel) {
-		foreach (t, ref pt; parallel(p)) {
-			const float_t l_i = loss(h, xs[t], ys[t]);
-			assert(pt[i] != 0);
-			const float_t ep = pt[i] * exp(-w_i * l_i);
-			//debug writeln("ep = ", ep);
-			assert(!ep.isNaN);
-			E_i += ep;
-			pt[i + 1] = ep;
-		}
-	} else {
-		for (uint t = 0; t < m; ++t) {
-			const float_t l_i = loss(h, xs[t], ys[t]);
-			const float_t ep = p[t][i] * exp(-w_i * l_i);
-			assert(!ep.isNaN);
-			E_i += ep;
-			p[t][i + 1] = ep;
-			assert(!p[t][i + 1].isNaN);
-		}
+	for (uint t = 0; t < m; ++t) {
+		const float_t l_i = loss(h, xs[t], ys[t]);
+		const float_t ep = p[t][i] * exp(-w_i * l_i);
+		assert(!ep.isNaN);
+		E_i += ep;
+		p[t][i + 1] = ep;
+		assert(!p[t][i + 1].isNaN);
 	}
 	assert(E_i != 0);
-	version (parallel) {
-		foreach (t, ref pt; parallel(p))
-			pt[i + 1] /= E_i;
-	} else {
-		for (uint t = 0; t < m; ++t) {
-			assert(!p[t][i + 1].isNaN);
-			p[t][i + 1] /= E_i;
-		}
+
+	for (uint t = 0; t < m; ++t) {
+		assert(!p[t][i + 1].isNaN);
+		p[t][i + 1] /= E_i;
 	}
 }
 
