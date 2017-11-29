@@ -117,13 +117,6 @@ do {
 	return eps;
 }
 
-void calcEps(uint T)(ref float[HParams] epsilons, in Image[] xs, in byte[] ys,
-		in float_t[T][] p, uint i, uint pixel, ubyte tau)
-{
-	epsilons[HParams(pixel, tau)] = calcEpsilon!T(xs, ys, p, i, pixel, tau);
-	debug writeln("{", pixel, ", ", tau, "} done.");
-}
-
 // Extract an h such that its epsilon is as far from 1/2 as possible
 auto chooseH(uint T)(in float_t[T][] p, uint i, in Image[] xs, in byte[] ys, ref HParams[] chosen)
 in {
@@ -139,8 +132,6 @@ out (result) {
 	assert(0 < result[1] && result[1] < 1.1);
 }
 do {
-	import std.algorithm.mutation;
-
 	immutable TAU_STEP = 64;
 
 	HParams bestPair;
