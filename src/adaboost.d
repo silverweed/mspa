@@ -19,6 +19,7 @@ shared float_t fltErr = 0;
 
 /// NUM = number to recognize
 /// T = number of weak classifiers
+/// Returns a tuple of slices {weights, params}
 auto adaboost(ubyte NUM, uint T)(in Image[] xs, in ubyte[] ys_in)
 in {
 	static assert(NUM >= 0 && NUM <= 9);
@@ -30,6 +31,7 @@ do {
 
 	immutable m = xs.length;
 	auto p = new float_t[T][](m);
+	/// Weights
 	auto w = new float_t[T];
 	auto h = new image_weak_classifier_t[T];
 	HParams[] chosen;
@@ -70,18 +72,39 @@ do {
 			calcNextP!T(p, i, h[i], xs, ys, w[i]);
 	}
 
-	version (parallel) taskPool.stop();
-
-	return (in Image x) {
+	return tuple(w, chosen);
+	/*(in Image x) {
 		float_t sum = 0;
 		for (uint i = 0; i < T; ++i) {
 			debug writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
 			sum += w[i] * h[i](x);
 		}
-		debug writeln("Adaboost sum = ", sum);
+		debug stderr.writeln("Adaboost sum = ", sum);
+		return sgn(sum);
+	};*/
+}
+
+auto makeAlgo(in float_t[] w, in HParams[] params)
+in {
+	assert(w.length == params.length);
+}
+do {
+	auto h = new image_weak_classifier_t[w.length];
+	for (int i = 0; i < h.length; ++i)
+		h[i] = make_image_weak_classifier(params[i].pixel, cast(ubyte)params[i].tau);
+
+	return (in Image x) {
+		float_t sum = 0;
+		for (uint i = 0; i < h.length; ++i) {
+			debug writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
+			sum += w[i] * h[i](x);
+		}
+		debug stderr.writeln("Adaboost sum = ", sum);
 		return sgn(sum);
 	};
 }
+
+private:
 
 /// Transform labels [0-9] into {-1, 1}
 byte[] transform(uint NUM)(in ubyte[] ys) pure {
