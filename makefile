@@ -7,7 +7,7 @@ seq:
 	dmd -debug src/*.d -of=main.x
 
 release:
-	dmd -release -version=parallel src/*.d -of=main.x
+	dmd -O -version=parallel src/*.d -of=main.x
 
 release-seq:
 	dmd -release src/*.d -of=main.x
