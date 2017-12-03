@@ -5,20 +5,21 @@ import std.typecons;
 import std.conv;
 import std.algorithm;
 import std.algorithm.sorting;
+import std.traits;
 version (parallel) import std.parallelism;
 debug import std.stdio;
 debug import std.format;
 import loss_function;
-import weak_classifier;
+import classifiers;
 import data;
 
-alias float_t = double;
+alias adaboost_t = ReturnType!(adaboost!(0, 1));
 
 /// Expected order of magnitude of the floating point error
 shared float_t fltErr = 0;
 
 /// NUM = number to recognize
-/// T = number of weak classifiers
+/// T = number of weak classifiers to use
 /// Returns a tuple of slices {weights, params}
 auto adaboost(ubyte NUM, uint T)(in Image[] xs, in ubyte[] ys_in)
 in {
@@ -56,7 +57,7 @@ do {
 		debug writeln(res[0], ", ", chosen);
 		const params = res[0];
 		const eps = res[1];
-		h[i] = make_image_weak_classifier(params.pixel, cast(ubyte)params.tau);
+		h[i] = makeImageWeakClassifier(params.pixel, cast(ubyte)params.tau);
 
 		// 2. compute weight
 		w[i] = 0.5 * log((1 - eps) / eps);
@@ -73,35 +74,6 @@ do {
 	}
 
 	return tuple(w, chosen);
-	/*(in Image x) {
-		float_t sum = 0;
-		for (uint i = 0; i < T; ++i) {
-			debug writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
-			sum += w[i] * h[i](x);
-		}
-		debug stderr.writeln("Adaboost sum = ", sum);
-		return sgn(sum);
-	};*/
-}
-
-auto makeAlgo(in float_t[] w, in HParams[] params)
-in {
-	assert(w.length == params.length);
-}
-do {
-	auto h = new image_weak_classifier_t[w.length];
-	for (int i = 0; i < h.length; ++i)
-		h[i] = make_image_weak_classifier(params[i].pixel, cast(ubyte)params[i].tau);
-
-	return (in Image x) {
-		float_t sum = 0;
-		for (uint i = 0; i < h.length; ++i) {
-			debug writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
-			sum += w[i] * h[i](x);
-		}
-		debug stderr.writeln("Adaboost sum = ", sum);
-		return sgn(sum);
-	};
 }
 
 private:
@@ -124,7 +96,7 @@ out (epsilon) {
 }
 do {
 	immutable m = xs.length;
-	const h = make_image_weak_classifier(pixel, tau);
+	const h = makeImageWeakClassifier(pixel, tau);
 
 	float_t eps = 0;
 	//int cnt = 0;
@@ -140,7 +112,7 @@ do {
 	return eps;
 }
 
-// Extract an h such that its epsilon is as far from 1/2 as possible
+/// Extract an h such that its epsilon is as far from 1/2 as possible
 auto chooseH(uint T)(in float_t[T][] p, uint i, in Image[] xs, in byte[] ys, ref HParams[] chosen)
 in {
 	//static assert(0 <= NUM && NUM <= 9);
@@ -247,6 +219,7 @@ do {
 	}
 }
 
+/// Returns the summation of all P's
 float_t pSum(uint T)(in float_t[T][] p, uint i) pure {
 	float_t sum = 0;
 	for (int t = 0; t < p.length; ++t) {
@@ -255,10 +228,12 @@ float_t pSum(uint T)(in float_t[T][] p, uint i) pure {
 	return sum;
 }
 
-Tuple!(uint, uint) asCoords(uint pixel, uint nCols) pure {
-	return tuple(pixel / nCols, pixel % nCols);
-}
+debug {
+	Tuple!(uint, uint) asCoords(uint pixel, uint nCols) pure {
+		return tuple(pixel / nCols, pixel % nCols);
+	}
 
-string pretty(T)(in T tup) {
-	return "(" ~ to!string(tup[0]) ~ ", " ~ to!string(tup[1]) ~ ")";
+	string pretty(T)(in T tup) {
+		return "(" ~ to!string(tup[0]) ~ ", " ~ to!string(tup[1]) ~ ")";
+	}
 }

@@ -5,7 +5,6 @@ import std.stdio;
 import std.algorithm;
 import std.bitmanip;
 import std.typecons;
-import weak_classifier;
 import data;
 
 auto getNItemsLabel(File f) {
@@ -64,4 +63,66 @@ void dumpImages(in Image[] imgs, in ImagesInfo info) {
 			writeln();
 		}
 	}
+}
+
+/// Fills the algorithms' parameters from a file. The file must contain lines
+/// starting with COEFF and followed by 3 spaces and a comma-separated list of weights,pixel,tau.
+/// The number of coefficients must is guessed by the function by counting how many consecutive 
+/// lines starting with COEFF are found.
+/// FIXME written in haste and currently bugged
+auto readSavedCoeffs(string fname) {
+	import std.file;
+	import std.string;
+	import std.conv;
+	import adaboost;
+
+	float_t[] w;
+	HParams[] params;
+
+	auto algo = new adaboost_t[10];
+
+	int guessedT = 0;
+	int curCoeff = -1;
+	bool guessingT = true;
+	int n = 0;
+
+	foreach (line; File(fname).byLine) {
+		if (line[0 .. 5] == "COEFF") {
+			++curCoeff;
+			if (guessingT)
+				++guessedT;
+			else if (curCoeff > guessedT)
+				throw new Exception("Inconsistent coefficient number in saved file!");
+
+			assert(line.length > 8);
+			const csv = line[8 .. $];
+			const splitted = csv.split(",");
+			w ~= splitted[0].to!float_t;
+			params ~= HParams(splitted[1].to!uint, splitted[2].to!uint);
+
+		} else {
+			if (guessingT) {
+				if (guessedT > 0) {
+					guessingT = false;
+					debug writeln("Guessed T = ", guessedT);
+				}
+				continue;
+			} else if (curCoeff > 0 && curCoeff != guessedT - 1)
+				throw new Exception("Inconsistent coefficient number in saved file! ("
+						~ curCoeff.to!string ~ " vs " ~ guessedT.to!string ~ ")");
+
+			if (n > 9)
+				break;
+
+			algo[n] = tuple(w, params);
+			w = [];
+			params = [];
+			++n;
+			curCoeff = -1;
+			if (n > 10)
+				throw new Exception("Too many digits in saved file!");
+		}
+	}
+
+	return algo;
 }
