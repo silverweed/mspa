@@ -2,8 +2,10 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
 
-\newcommand\eqdef{\mathrel{\stackrel{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
+\newcommand \eqdef{\mathrel{\stackrel{\makebox[0pt]{\mbox{\normalfont\tiny def}}}{=}}}
 
 \title{Relazione di Metodi Statistici per l'Apprendimento}
 \author{Giacomo Parolini}
@@ -15,6 +17,9 @@
 \maketitle
 \end{titlepage}
 
+\tableofcontents
+\pagebreak
+
 \begin{abstract}
 \noindent
 Nel seguente progetto ci si propone di applicare l'algoritmo Adaboost al problema del riconoscimento automatico delle cifre scritte a mano. 
@@ -22,12 +27,13 @@ Si utilizzano come {\it weak learner} dei {\it decision stump} della forma
 \begin{center}
 	\( h_\tau(x) = sgn(x - \tau) \)
 \end{center}
+Vengono quindi prodotti 10 distinti {\it strong classifier}, uno per cifra, in grado di distinguere se una data immagine \`e la cifra che sono stati allenati a riconoscere o no. Infine, usando una tecnica{\it one vs all} sui classificatori ottenuti, si produce un classificatore non binario in grado di determinare la cifra esatta data l'immagine.
 Il dataset utilizzato \`e il MNIST\footnote{http://yann.lecun.com/exdb/mnist/}.
 \end{abstract}
 
 %%%%% 1: DESCRIZIONE DATI
 
-\section{Descrizione dei dati}
+\section{Descrizione dei dati} \label{sec:data}
 I dati MNIST utilizzati nel corso del progetto sono suddivisi in due tipologie: immagini contenenti le cifre scritte a mano ed etichette che descrivono la cifra contenuta in ogni immagine.
 
 \subsection{Immagini}
@@ -60,7 +66,45 @@ dove \(x = \{x_0, \dotsc, x_{783}\}\) \`e un'immagine del dataset e $p$ e $\tau$
 
 Una volta scelti i classificatori base \({h_i}\), Adaboost produce un classificatore che ha la forma
 
-	\[ H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = {\huge \sum\limits_{i=1}^T{w_i h^i(x)}} \]
+\begin{equation} \label{eq:strongclass}
+H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = \sum\limits_{i=1}^T{w_i h^i(x)}
+\end{equation}
 
 Andiamo cos\`i a costruire incrementalmente un classificatore forte di immagini aggiungendo man mano test binari su singoli pixel scelti accuratamente in modo da massimizzare l'efficacia di tali test.
+
+Dal punto di vista matematico, ``massimizzare l'efficacia'' di un test corrisponde a scegliere di volta in volta il classificatore \(h_{p,\tau}\) che ha il minimo training error possibile tra quelli a disposizione. Per la precisione si minimizza un maggiorante convesso del training error, che andremo ora a definire.
+
+\hfill \break
+Per prima cosa si introducono le funzioni \(L_i(t)\bigm|_{i=1}^T \eqdef h_i(x_t)y_t \) le quali, data un'immagine $x$, restituiscono $-1$ o $1$ rispettivamente se il {\it weak learner} $h_i$ fallisce o indovina la predizione su tale immagine\footnote{ricordiamo che gli $h_i$ utilizzati sono classificatori binari, in grado di distinguere una singola cifra da tutte le altre, pertanto restituiranno $-1$ per indicare ``cifra non corrispondente'' e $1$ per indicare ``cifra corrispondente''}.
+
+Tramite una serie di uguaglianze e maggiorazioni, si pu\`o dimostrare che minimizzare il training error di un classificatore $h$ equivale a minimizzare la funzione
+
+\begin{equation} \label{eq:maggiorante}
+e^{-w_i}(1 - \varepsilon_i) + e^{w_i}\varepsilon_i 
+\end{equation}
+
+in cui
+
+\[ \varepsilon_i \eqdef \sum\limits_{t=1}^{|S|}{\mathbb{I}\{L_i(t) = -1\}\mathbb{P}_i(t) } \]
+
+e le $\mathbb{P}_i$ rappresentano le funzioni di probabilit\`a sullo spazio campionario \(\Omega = \{1, \dotsc, m\}\) su cui le funzioni $L_i$ sono variabili casuali. Queste funzioni vengono inizializzate al valore \(P_i(t) = \frac{1}{m} \hskip 0.5em \forall i \) (dove $m$ \`e la dimensione del training set $S$) e ricalcolate iterativamente ad ogni passo di Adaboost tramite la formula
+
+\[ P_{i+1}(t) \eqdef \frac{\mathbb{P}_i(t)e^{-w_iL_i(t)}}{\mathbb{E}_i[e^{-w_iL_i(t)}]} \]
+
+Il minimo dell'equazione \ref{eq:maggiorante} corrisponde a \(w = \frac{1}{2} \ln{\frac{1 - \varepsilon}{\varepsilon}}\), pertanto assegnamo questo valore al peso $w_i$ da dare al {\it weak learner} $h_i$.
+Nella costruzione del classificatore forte \ref{eq:strongclass}, vogliamo che ogni componente abbia un peso il pi\`u  diverso possibile da $1/2$, poich\'e questo corrisponde ad avere risposte pi\`u ``sicure'' da parte dei singoli $h_i$.
+
+Per questa ragione, ad ogni passo Adaboost seleziona il prossimo classificatore $h$ da aggiungere alla somma in base al valore dell'$\varepsilon_i$ ad esso corrispondente. Il classificatore per cui \(|\varepsilon_i - 1/2|\) \`e massimo viene scelto.
+
+%%%%%% 3: DESCRIZIONE IMPLEMENTAZIONE
+\section{Implementazione}
+Vista la relativa semplicit\`a dell'algoritmo Adaboost e dei dati trattati, si \`e scelto di implementare il tutto ``a mano''\footnote{Il codice sorgente \`e disponibile all'URL \url{https://github.com/silverweed/mspa/}}. \`E stato adottato un approccio basato fortemente sulla programmazione a contratto ed \`e stato usato il linguaggio di programmazione D\footnote{https://dlang.org/}.
+
+Il flusso logico del programma realizzato \`e il seguente:
+\begin{enumerate}
+\item I dati vengono letti da file come descritto nella sezione \ref{sec:data}.
+\item Si esegue il training dei 10 {\it strong classifier} (uno per cifra) tramite Adaboost. Il training set usato \`e lo stesso per ognuno.
+\item Si calcolano i valori statistici d'interesse per ciascun algoritmo (training error, test error, ...).
+\item Si combinano i classificatori in un unico macro-classificatore {\it one-vs-all} e se ne calcolano i valori statistici d'interesse.
+\end{enumerate}
 \end{document}
