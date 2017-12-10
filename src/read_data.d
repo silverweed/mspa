@@ -87,6 +87,7 @@ auto readSavedCoeffs(string fname) {
 	int n = 0;
 
 	foreach (line; File(fname).byLine) {
+		debug writeln("read line ", line);
 		if (line[0 .. 5] == "COEFF") {
 			++curCoeff;
 			if (guessingT)
@@ -113,7 +114,13 @@ auto readSavedCoeffs(string fname) {
 
 			if (n > 9)
 				break;
+			
+			if (curCoeff < 0)
+				continue;
 
+			debug writeln("curCoeff = ", curCoeff, ", w = ", w, ", params = ", params);
+			assert(w.length == guessedT && params.length == guessedT);
+			debug writeln("algo[", n, "] ok");
 			algo[n] = tuple(w, params);
 			w = [];
 			params = [];

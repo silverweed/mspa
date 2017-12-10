@@ -2,6 +2,7 @@ module classifiers;
 
 import std.math;
 import data;
+import adaboost : adaboost_t;
 debug import std.stdio;
 
 // Weak classifier h_{p,τ}(x) = sgn(x_p - τ), where p is the pixel coordinate in x
@@ -29,10 +30,14 @@ do {
 	return (in Image x) {
 		float_t sum = 0;
 		for (uint i = 0; i < h.length; ++i) {
-			debug writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
+			debug (2) writeln("w[", i, "] = ", w[i], ", h[i](x) = ", h[i](x));
 			sum += w[i] * h[i](x);
 		}
-		debug stderr.writeln("Adaboost sum = ", sum);
+		debug writeln("Adaboost sum = ", sum);
 		return sum;
 	};
+}
+
+auto makeImageStrongClassifier(in adaboost_t algo) {
+	return makeImageStrongClassifier(algo[0], algo[1]);
 }

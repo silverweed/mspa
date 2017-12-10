@@ -9,7 +9,6 @@ import std.traits;
 version (parallel) import std.parallelism;
 debug import std.stdio;
 debug import std.format;
-import loss_function;
 import classifiers;
 import data;
 
@@ -28,7 +27,7 @@ in {
 	assert(xs.length == ys_in.length);
 }
 do {
-	const ys = transform!NUM(ys_in);
+	const ys = toBinaryLabel!NUM(ys_in);
 
 	immutable m = xs.length;
 	auto p = new float_t[T][](m);
@@ -61,7 +60,7 @@ do {
 
 		// 2. compute weight
 		w[i] = 0.5 * log((1 - eps) / eps);
-		debug {
+		debug (2) {
 			writeln("chosen params: pixel = ", params.pixel.asCoords(28).pretty(), ", tau = ", params.tau);
 			writeln("epsilon = ", eps);
 			writeln("log((1-e)/e) = ", log((1 - eps)/eps));
@@ -76,12 +75,35 @@ do {
 	return tuple(w, chosen);
 }
 
-private:
 
 /// Transform labels [0-9] into {-1, 1}
-byte[] transform(uint NUM)(in ubyte[] ys) pure {
+byte[] toBinaryLabel(uint NUM)(in ubyte[] ys) pure {
 	import std.array;
 	return array(ys.map!(y => cast(byte)(2 * (y == NUM) - 1)));
+}
+
+/// Transform labels [0-9] into {-1, 1} (non-templatized version)
+byte[] toBinaryLabel(in ubyte[] ys, uint num) pure {
+	import std.array;
+	return array(ys.map!(y => cast(byte)(2 * (y == num) - 1)));
+}
+
+private:
+
+/// L function
+///       / 1  if h(x) == y
+/// L(x) =
+///       \ -1 otherwise
+auto L(H)(in H h, in Image x, byte y) pure
+in {
+	assert(h(x) == 1 || h(x) == -1);
+	assert(y == 1 || y == -1);
+}
+out (result) {
+	assert(result == 1 || result == -1);
+}
+do {
+	return h(x) * y;
 }
 
 float_t calcEpsilon(uint T)(in Image[] xs, in byte[] ys, in float_t[T][] p, uint i, uint pixel, ubyte tau)
@@ -103,9 +125,7 @@ do {
 	for (int t = 0; t < m; ++t) {
 		debug if (p[t][i].isNaN) writeln("p[%d][%d] = %f".format(t, i, p[t][i]));
 		assert(!p[t][i].isNaN);
-		//debug if (i > 0) writeln("loss = ", cast(int)(loss(h, xs[t], ys[t]) == -1), ", p = ", p[t][i]);
-		//if (loss(h, xs[t], ys[t]) == 1) cnt++;
-		eps += (loss(h, xs[t], ys[t]) == -1) * p[t][i];
+		eps += (L(h, xs[t], ys[t]) == -1) * p[t][i];
 		//debug if (i > 0) writeln(t, " eps = ", eps);
 	}
 	//debug writeln("h_{", pixel, ", ", tau, "}:  eps = ", eps, " (cnt = ", cnt, ")");
@@ -115,7 +135,6 @@ do {
 /// Extract an h such that its epsilon is as far from 1/2 as possible
 auto chooseH(uint T)(in float_t[T][] p, uint i, in Image[] xs, in byte[] ys, ref HParams[] chosen)
 in {
-	//static assert(0 <= NUM && NUM <= 9);
 	assert(p.length == xs.length);
 	assert(xs.length == ys.length);
 	assert(i < p[0].length);
@@ -204,7 +223,7 @@ do {
 	immutable m = xs.length;
 	float_t E_i = 0;
 	for (uint t = 0; t < m; ++t) {
-		const float_t l_i = loss(h, xs[t], ys[t]);
+		const float_t l_i = L(h, xs[t], ys[t]);
 		const float_t ep = p[t][i] * exp(-w_i * l_i);
 		assert(!ep.isNaN);
 		E_i += ep;

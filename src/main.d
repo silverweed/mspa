@@ -1,3 +1,6 @@
+/// Handwritten digit classification using Adaboost
+/// @author Giacomo Parolini, 2017
+/// @license MIT
 module main;
 
 import std.stdio;
@@ -9,49 +12,61 @@ import std.math;
 import read_data;
 import data;
 import classifiers;
-import adaboost : adaboost, adaboost_t;
+import loss_function;
+import adaboost : adaboost, adaboost_t, toBinaryLabel;
+
+alias data_t = Tuple!(const(Image)[], const(ubyte)[]);
 
 enum trainLabelsFname = "data/train-labels-idx1-ubyte";
 enum trainImagesFname = "data/train-images-idx3-ubyte";
 enum testLabelsFname = "data/t10k-labels-idx1-ubyte";
 enum testImagesFname = "data/t10k-images-idx3-ubyte";
-
 enum T = 5;
 
 void main() {
-	auto algo = train();
-	//auto algo = readSavedCoeffs("results/resultsgood10.dat");
-	auto data = getTestData();
-	testSingle(algo, data[0], data[1]);
-	testOnevsAll(algo, data[0], data[1]);
+	const trainData = getData(trainLabelsFname, trainImagesFname);
+	//const algo = train(trainData);
+	const algo = readSavedCoeffs("results/resultsgood10.dat");
+	debug foreach (i, a; algo) {
+		writefln("algo[%d]:", i);
+		writeln("weights:");
+		foreach (w; a[0])
+			writef("%f ", w);
+		writeln("pixel,tau:");
+		foreach(p; a[1])
+			writef("%d,%d ", p.pixel, p.tau);
+		writeln("");
+	}
+	dumpTrainingErrors(algo, trainData);
+	const testData = getData(testLabelsFname, testImagesFname);
+	testSingle(algo, testData);
+	testOnevsAll(algo, testData);
 }
 
-auto getTestData()
+auto getData(string labelsFname, string imagesFname)
 out (result) {
 	assert(result[0].length == result[1].length);
 }
 do {
 	// Labels
-	auto testLabelsFile = File(testLabelsFname, "r");
-	immutable nLabels = getNItemsLabel(testLabelsFile);
-	const ys = getLabels(testLabelsFile, nLabels);
-	testLabelsFile.close();
+	auto labelsFile = File(labelsFname, "r");
+	immutable nLabels = getNItemsLabel(labelsFile);
+	const ys = getLabels(labelsFile, nLabels);
+	labelsFile.close();
 
 	// Images
-	auto testImagesFile = File(testImagesFname, "r");
-	immutable info = getNItemsImages(testImagesFile);
-	const xs = getImages(testImagesFile, info);
-	testImagesFile.close();
+	auto imagesFile = File(imagesFname, "r");
+	immutable info = getNItemsImages(imagesFile);
+	const xs = getImages(imagesFile, info);
+	imagesFile.close();
 	
 	return tuple(xs, ys);
 }
 
 /// Tests each digit detection algorithm separately
-void testSingle(in adaboost_t[] algo, in Image[] xs, in ubyte[] ys)
-in {
-	assert(xs.length == ys.length);
-}
-do {
+void testSingle(in adaboost_t[] algo, in data_t data) {
+	const xs = data[0];
+	const ys = data[1];
 	for (int n = 0; n < algo.length; ++n) {
 		writefln("[%d] Coefficients:", n);
 		for (int j = 0; j < algo[n][0].length; ++j) {
@@ -59,37 +74,38 @@ do {
 			writefln("COEFF   %f,%d,%d", algo[n][0][j], algo[n][1][j].pixel, algo[n][1][j].tau);
 		}
 		int ok = 0;
+		const alg = makeImageStrongClassifier(algo[n]);
 		for (uint i = 0; i < xs.length; ++i) {
-			const alg = makeImageStrongClassifier(algo[n][0], algo[n][1]);
-			immutable pred = alg(xs[i]).sgn;
-			bool isOk = pred == 2 * (ys[i] == n) - 1;
+			immutable pred = sgn(alg(xs[i]));
+			immutable isOk = pred == 2 * (ys[i] == n) - 1;
 			debug stderr.writefln("predicted = %s, real = %d  | %s",
 					pred > 0 ? n.to!string : "not " ~ n.to!string, ys[i], isOk);
 			if (isOk) ++ok;
 		}
 		writefln("[%d] guessed %d out of %d (%f%%)", n, ok, xs.length, ok * 100.0 / xs.length);
+		writefln("[%d] Test Error = %f", n, calcError!(loss01)((in Image x) {
+			return sgn(alg(x));
+		}, xs, ys.toBinaryLabel(n)));
 	}
 }
 
 /// Performs a 1-vs-all test
-void testOnevsAll(in adaboost_t[] algo, in Image[] xs, in ubyte[] ys)
-in {
-	assert(xs.length == ys.length);
-}
-do {
+void testOnevsAll(in adaboost_t[] algo, in data_t data) {
+	const xs = data[0];
+	const ys = data[1];
 	int ok = 0;
 	for (int i = 0; i < xs.length; ++i) {
 		int predicted;
 		float_t maxRes;
 		for (int n = 0; n < algo.length; ++n) {
-			const alg = makeImageStrongClassifier(algo[n][0], algo[n][1]);
+			const alg = makeImageStrongClassifier(algo[n]);
 			immutable sum = alg(xs[i]);
 			if (maxRes.isNaN || sum > maxRes) {
 				maxRes = sum;
 				predicted = n;
 			}
 		}
-		bool isOk = predicted == ys[i];
+		immutable isOk = predicted == ys[i];
 		debug stderr.writefln("predicted = %d, real = %d | %s", predicted, ys[i], isOk);
 		if (isOk) ++ok;
 	}
@@ -97,20 +113,11 @@ do {
 }
 
 /// Trains 10 separate algorithms for single digit binary detection and returns a slice containing them
-auto train() {
+auto train(in data_t data) {
 	adaboost_t[10] algo;
 
-	// Labels
-	auto trainLabelsFile = File(trainLabelsFname, "r");
-	immutable nLabels = getNItemsLabel(trainLabelsFile);
-	const ys = getLabels(trainLabelsFile, nLabels);
-	trainLabelsFile.close();
-
-	// Images
-	auto trainImagesFile = File(trainImagesFname, "r");
-	immutable info = getNItemsImages(trainImagesFile);
-	const xs = getImages(trainImagesFile, info);
-	trainImagesFile.close();
+	const xs = data[0];
+	const ys = data[1];
 
 	// This is where I'd put a static foreach
 	stderr.writeln("Calculating algo 0");
@@ -139,7 +146,7 @@ auto train() {
 	return algo;
 }
 
-void dump() {
+debug void dump() {
 	{
 		/// Train Labels
 		auto trainLabelsFile = File(trainLabelsFname, "r");
@@ -182,5 +189,16 @@ void dump() {
 		const imgs = getImages(testImagesFile, info);
 
 		dumpImages(imgs, info);
+	}
+}
+
+void dumpTrainingErrors(in adaboost_t[] algo, in data_t data) {
+	const xs = data[0];
+	const ys = data[1];
+	foreach (uint i, a; algo) {
+		const alg = makeImageStrongClassifier(a);
+		writefln("[%d] Training Error = %f", i, calcError!(loss01)((in Image x) {
+			return sgn(alg(x));
+		}, xs, ys.toBinaryLabel(i)));
 	}
 }
