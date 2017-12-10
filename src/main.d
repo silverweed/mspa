@@ -94,22 +94,15 @@ void testOnevsAll(in adaboost_t[] algo, in data_t data) {
 	const xs = data[0];
 	const ys = data[1];
 	int ok = 0;
+	const alg = makeOneVsAllClassifier(algo);
 	for (int i = 0; i < xs.length; ++i) {
-		int predicted;
-		float_t maxRes;
-		for (int n = 0; n < algo.length; ++n) {
-			const alg = makeImageStrongClassifier(algo[n]);
-			immutable sum = alg(xs[i]);
-			if (maxRes.isNaN || sum > maxRes) {
-				maxRes = sum;
-				predicted = n;
-			}
-		}
+		immutable predicted = alg(xs[i]);
 		immutable isOk = predicted == ys[i];
 		debug stderr.writefln("predicted = %d, real = %d | %s", predicted, ys[i], isOk);
 		if (isOk) ++ok;
 	}
 	writefln("Guessed %d numbers out of %d (%f%%)", ok, xs.length, ok * 100.0 / xs.length);
+	writefln("[1vA] Test Error = %f", calcError!(loss01)(alg, xs, ys));
 }
 
 /// Trains 10 separate algorithms for single digit binary detection and returns a slice containing them
