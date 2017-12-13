@@ -69,7 +69,6 @@ void dumpImages(in Image[] imgs, in ImagesInfo info) {
 /// starting with COEFF and followed by 3 spaces and a comma-separated list of weights,pixel,tau.
 /// The number of coefficients must is guessed by the function by counting how many consecutive 
 /// lines starting with COEFF are found.
-/// FIXME written in haste and currently bugged
 auto readSavedCoeffs(string fname) {
 	import std.file;
 	import std.string;
@@ -90,6 +89,7 @@ auto readSavedCoeffs(string fname) {
 		debug writeln("read line ", line);
 		if (line[0 .. 5] == "COEFF") {
 			++curCoeff;
+			debug writefln("Reading coeff %d / %d", curCoeff, guessingT ? 0 : guessedT);
 			if (guessingT)
 				++guessedT;
 			else if (curCoeff > guessedT)
@@ -106,12 +106,15 @@ auto readSavedCoeffs(string fname) {
 				if (guessedT > 0) {
 					guessingT = false;
 					debug writeln("Guessed T = ", guessedT);
+				} else {
+					debug writeln("Pre-first coefficient: ignoring.");
+					continue;
 				}
-				continue;
 			} else if (curCoeff > 0 && curCoeff != guessedT - 1)
 				throw new Exception("Inconsistent coefficient number in saved file! ("
 						~ curCoeff.to!string ~ " vs " ~ guessedT.to!string ~ ")");
 
+			debug writeln("Saving coefficients for algo ", n);
 			if (n > 9)
 				break;
 			
@@ -129,6 +132,13 @@ auto readSavedCoeffs(string fname) {
 			if (n > 10)
 				throw new Exception("Too many digits in saved file!");
 		}
+	}
+	// Last cipher may be saved here, if it has no separator after all coefficients
+	if (n == 9) {
+		debug writeln("curCoeff = ", curCoeff, ", w = ", w, ", params = ", params);
+		assert(w.length == guessedT && params.length == guessedT);
+		debug writeln("algo[", n, "] ok");
+		algo[n] = tuple(w, params);
 	}
 
 	return algo;

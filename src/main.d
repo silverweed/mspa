@@ -23,10 +23,21 @@ enum testLabelsFname = "data/t10k-labels-idx1-ubyte";
 enum testImagesFname = "data/t10k-images-idx3-ubyte";
 enum T = 5;
 
-void main() {
-	const trainData = getData(trainLabelsFname, trainImagesFname);
-	//const algo = train(trainData);
-	const algo = readSavedCoeffs("results/resultsgood10.dat");
+// Usage: $0 [resultsFile]
+void main(string[] args) {
+	auto resultsFile = "";
+	if (args.length > 1)
+		resultsFile = args[1];
+
+	adaboost_t[] algo;
+
+	if (resultsFile.length > 0)
+		algo = readSavedCoeffs(resultsFile);
+	else {
+		const trainData = getData(trainLabelsFname, trainImagesFname);
+		algo = train(trainData);
+		dumpTrainingErrors(algo, trainData);
+	}
 	debug foreach (i, a; algo) {
 		writefln("algo[%d]:", i);
 		writeln("weights:");
@@ -37,7 +48,6 @@ void main() {
 			writef("%d,%d ", p.pixel, p.tau);
 		writeln("");
 	}
-	dumpTrainingErrors(algo, trainData);
 	const testData = getData(testLabelsFname, testImagesFname);
 	testSingle(algo, testData);
 	testOnevsAll(algo, testData);
