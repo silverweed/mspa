@@ -12,4 +12,4 @@ data/
 trace.def
 trace.html
 *.swp
-results/
+extrap_*
