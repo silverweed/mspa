@@ -3,6 +3,7 @@
 *.x
 data/
 *.gz
+*.out
 *.toc
 *.pdf
 *.log
