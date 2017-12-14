@@ -3,7 +3,7 @@
 \section{Risultati}
 Presentiamo in questa sezione i risultati per il test error e per la frazione di cifre indovinate dagli algoritmi calcolati.
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{testerr_single}
 \caption{Andamento del Test Error dei classificatori binari a singola cifra al variare di $T$.}
@@ -12,6 +12,20 @@ Presentiamo in questa sezione i risultati per il test error e per la frazione di
 \caption{Andamento della frazione di risposte corrette dei classificatori binari a singola cifra al variare di $T$.}
 \label{fig:single}
 \end{figure}
+
+
+I grafici per i classificatori binari evidenziano, come atteso, un andamento pressoch\'e monotono decrescente del test error al crescere di $T$ e un corrispettivo andamento monotono crescente della frazione di cifre riconosciute. \`E interessante notare che ogni cifra ha un andamento leggermente diverso, e tende a stabilizzarsi su un diverso valore ``finale'' per $T$ elevati. Questi valori differiscono circa di un fattore 4 tra gli estremi, con la cifra 1 avente un test error vicino a 0.01 e la cifra 5 vicino a 0.04. L'ordine delle cifre, dalla pi\`u facilmente riconosciuta alla meno, \`e:
+
+\[(1, 0, 6, 7, 4, 2, 3, 8, 9, 5)\]
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{min_testerr}
+\caption{Test Error a \(T = 250\) dei classificatori binari a singola cifra.}
+\label{fig:min_testerr}
+\end{figure}
+
+%% 1 v A
 
 \begin{figure}[h]
 \centering
@@ -22,3 +36,5 @@ Presentiamo in questa sezione i risultati per il test error e per la frazione di
 \caption{Andamento della frazione di risposte corrette del classificatore combinato One-vs-All al variare di $T$.}
 \label{fig:1vA}
 \end{figure}
+
+Per quanto riguarda il classificatore combinato, l'andamento del test error e della frazione di cifre indovinate \`e simile a quella dei classificatori binari, e il classificatore combinato ottiene circa il 90\% di successo con \(T = 250\). 
