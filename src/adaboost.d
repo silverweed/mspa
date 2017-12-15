@@ -153,7 +153,7 @@ do {
 	bool found = false;
 
 	// Loop over the weak classifier parameters p and tau.
-	// Choose the combination of parameters which minimizes epsilon.
+	// Choose the combination of parameters which minimizes abs(epsilon - 1/2).
 	version (parallel) {
 		float[HParams] epsilons;
 		
