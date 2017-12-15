@@ -1,7 +1,7 @@
 %%%%%% 2: DESCRIZIONE ADABOOST
 
 \section{Adaboost}
-Adaboost ({\it Adaptive Boosting}) \`e un ``meta-algoritmo'' usato per costruire in modo incrementale un classificatore forte a partire da un numero $T$ di classificatori deboli ({\it weak learner}). La potenza di Adaboost \`e data in gran parte dall'essere un metodo generico, ovvero dal non dipendere in modo sostanziale dalla tipologia di {\it weak learner} utilizzata. Per questa ragione, si sceglie spesso di utilizzare {\it weak learner} molto semplici, in modo da minimizzare il peso computazionale dell'algoritmo.
+Adaboost ({\it Adaptive Boosting}) \`e un ``meta-algoritmo'' usato per costruire in modo incrementale un classificatore forte a partire da un numero $T$ di classificatori deboli ({\it weak learner}). La potenza di Adaboost \`e data in gran parte dall'essere un metodo generico, ovvero dal non dipendere in modo sostanziale dalla tipologia di {\it weak learner} utilizzata\footnote{l'unica richiesta \`e che il {\it weak learner} sia in grado di produrre risultati leggermente migliori di una selezione casuale.}. Per questa ragione, si sceglie spesso di utilizzare {\it weak learner} molto semplici, in modo da minimizzare il peso computazionale dell'algoritmo.
 
 Nel presente progetto utilizziamo dei {\it weak learner} della forma
 \begin{center}
@@ -9,7 +9,7 @@ Nel presente progetto utilizziamo dei {\it weak learner} della forma
 \end{center}
 dove \(x = \{x_0, \dotsc, x_{783}\}\) \`e un'immagine del dataset e $p$ e $\tau$ sono parametri che rappresentano rispettivamente l'indice del pixel da considerare e la soglia sulla scurezza di tale pixel.
 
-Una volta scelti i classificatori base \({h_i}\), Adaboost produce un classificatore che ha la forma
+Una volta scelti i classificatori base \({h_i}\), Adaboost produce un classificatore forte che ha la forma
 
 \begin{equation} \label{eq:strongclass}
 H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = \sum\limits_{i=1}^T{w_i h^i(x)}
@@ -17,12 +17,16 @@ H(x) \eqdef sgn(f(x)), \hskip 2em f(x) = \sum\limits_{i=1}^T{w_i h^i(x)}
 
 Andiamo cos\`i a costruire incrementalmente un classificatore forte di immagini aggiungendo man mano test binari su singoli pixel scelti accuratamente in modo da massimizzare l'efficacia di tali test.
 
-Dal punto di vista matematico, ``massimizzare l'efficacia'' di un test corrisponde a scegliere di volta in volta il classificatore \(h_{p,\tau}\) che ha il minimo training error possibile tra quelli a disposizione. Per la precisione si minimizza un maggiorante convesso del training error, che andremo ora a definire.
+Dal punto di vista matematico, ``massimizzare l'efficacia'' di un test corrisponde a scegliere di volta in volta il classificatore \(h_{p,\tau}^i\) che ha il minimo training error possibile tra quelli a disposizione. Per la precisione si minimizza un maggiorante convesso del training error, che andremo ora a definire.
 
 \hfill \break
-Per prima cosa si introducono le funzioni \(L_i(t)\bigm|_{i=1}^T \eqdef h_i(x_t)y_t \) le quali, data un'immagine $x$, restituiscono $-1$ o $1$ rispettivamente se il {\it weak learner} $h_i$ fallisce o indovina la predizione su tale immagine\footnote{ricordiamo che gli $h_i$ utilizzati sono classificatori binari, in grado di distinguere una singola cifra da tutte le altre, pertanto restituiranno $-1$ per indicare ``cifra non corrispondente'' e $1$ per indicare ``cifra corrispondente''}.
+Per prima cosa si introducono le funzioni
+ 
+ \[ L_i(t) \eqdef h_i(x_t)y_t \hskip 2em  i = 1, \dotsc, T \]
+ 
+le quali, data un'immagine $x$, restituiscono -1 o 1 rispettivamente se il {\it weak learner} $h_i$ fallisce o indovina la predizione su tale immagine\footnote{ricordiamo che gli $h_i$ utilizzati sono classificatori binari, in grado di distinguere una singola cifra da tutte le altre, pertanto restituiranno $-1$ per indicare ``cifra non corrispondente'' e $1$ per indicare ``cifra corrispondente''}.
 
-Tramite una serie di uguaglianze e maggiorazioni, si pu\`o dimostrare che minimizzare il training error di un classificatore $h$ equivale a minimizzare la funzione
+Si pu\`o dimostrare che minimizzare il training error di un classificatore $h$ equivale a minimizzare la funzione
 
 \begin{equation} \label{eq:maggiorante}
 e^{-w_i}(1 - \varepsilon_i) + e^{w_i}\varepsilon_i 
@@ -36,7 +40,7 @@ e le $\mathbb{P}_i$ rappresentano le funzioni di probabilit\`a sullo spazio camp
 
 \[ P_{i+1}(t) \eqdef \frac{\mathbb{P}_i(t)e^{-w_iL_i(t)}}{\mathbb{E}_i[e^{-w_iL_i(t)}]} \]
 
-Il minimo dell'equazione \ref{eq:maggiorante} corrisponde a \(w = \frac{1}{2} \ln{\frac{1 - \varepsilon}{\varepsilon}}\), pertanto assegnamo questo valore al peso $w_i$ da dare al {\it weak learner} $h_i$.
-Nella costruzione del classificatore forte \ref{eq:strongclass}, vogliamo che ogni componente abbia un peso il pi\`u  diverso possibile da $1/2$, poich\'e questo corrisponde ad avere risposte pi\`u ``sicure'' da parte dei singoli $h_i$.
+Il minimo dell'equazione \ref{eq:maggiorante} corrisponde a \(w = \frac{1}{2} \ln{\frac{1 - \varepsilon}{\varepsilon}}\), pertanto assegnamo questo valore al peso $w_i$ da dare al {\it weak learner} $h_i$ nella somma \ref{eq:strongclass}.
+Nella costruzione di tale somma vogliamo che ogni componente abbia un peso il pi\`u  diverso possibile da $1/2$, poich\'e questo corrisponde ad avere risposte pi\`u ``certe'' da parte dei singoli $h_i$.
 
 Per questa ragione, ad ogni passo Adaboost seleziona il prossimo classificatore $h$ da aggiungere alla somma in base al valore dell'$\varepsilon_i$ ad esso corrispondente. Il classificatore per cui \(|\varepsilon_i - 1/2|\) \`e massimo viene scelto.

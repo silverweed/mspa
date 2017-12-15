@@ -2,14 +2,36 @@
 
 %%%%%% 3: DESCRIZIONE IMPLEMENTAZIONE
 \section{Implementazione}
-Vista la relativa semplicit\`a dell'algoritmo Adaboost e dei dati trattati, si \`e scelto di implementare la lettura dei dati e l'algoritmo stesso manualmente\footnote{Il codice sorgente \`e disponibile all'URL \url{https://github.com/silverweed/mspa/}}. \`E stato adottato un approccio basato fortemente sulla programmazione a contratto ed \`e stato usato il linguaggio di programmazione D\footnote{https://dlang.org/}.
+Vista la relativa semplicit\`a dell'algoritmo Adaboost e della tipologia di dati trattati, si \`e scelto di implementare la lettura dei dati e l'algoritmo stesso manualmente\footnote{Il codice sorgente \`e disponibile all'URL \url{https://github.com/silverweed/mspa/}.}. \`E stato adottato un approccio basato fortemente sulla programmazione a contratto ed \`e stato usato il linguaggio di programmazione D\footnote{\url{https://dlang.org/}}.
 
 Il flusso logico del programma realizzato \`e il seguente:
 \begin{enumerate}
 \item I dati vengono letti da file come descritto nella sezione \ref{sec:data}.
-\item Si esegue il training dei 10 {\it strong classifier} (uno per cifra) tramite Adaboost. Il training set usato \`e lo stesso per ognuno.
+\item Si esegue il training dei 10 {\it strong classifier} (uno per cifra) tramite Adaboost. Il training set usato \`e lo stesso per ciascuno.
 \item Si calcolano i valori statistici d'interesse per ciascun algoritmo (training error, test error, ...).
 \item Si combinano i classificatori in un unico macro-classificatore {\it one-vs-all} e se ne calcolano i valori statistici d'interesse.
 \end{enumerate}
+
+Il classificatore {\it one-vs-all} \`e implementato scegliendo come cifra predetta quella il cui classificatore binario produce il risultato pi\`u ``certo'', ovvero quello la cui somma descritta nell'Equazione \ref{eq:strongclass} fornisce il risultato massimo. Questo \`e riassunto tramite il seguente pseudo-codice:
+
+\pagebreak
+\begin{lstlisting}[language=c]
+procedure OneVsAll(Image x) {
+    int predicted;
+    float maxResult = -infinity;
+    for (int n = 0; n < 10; ++n) {
+        /* Get n-th strong binary classifier
+         * produced via Adaboost beforehand
+         */
+        strong_classifier_t c = digitClassifiers[n];
+        float sum = c(x);
+        if (sum > maxRes) {
+            maxRes = sum;
+            predicted = n;
+        }
+    }
+    return predicted;
+}
+\end{lstlisting}
 
 Il programma ha inizialmente generato i risultati relativi a \(T = 250\). Dopodich\'e, dal momento che i coefficienti trovati (pesi, pixel e soglie) non dipendono dal T usato, sono stati estratti da questi risultati quelli relativi a \(1 \le T \le 249\), sui quali sono stati ricalcolati i parametri statistici d'interesse. Abbiamo cos\`i ottenuto i test error e la percentuale di {\it guess} sul test set per tutti i classificatori forti formati da un numero variabile di {\it weak learner} compreso tra 1 e 250.

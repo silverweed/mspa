@@ -3,8 +3,8 @@
 Nel seguente progetto ci si propone di applicare l'algoritmo Adaboost al problema del riconoscimento automatico delle cifre scritte a mano. 
 Si utilizzano come {\it weak learner} dei {\it decision stump} della forma
 \begin{center}
-	\( h_\tau(x) = sgn(x - \tau) \)
+	\( h_{p, \tau}(x) = sgn(x_p - \tau) \)
 \end{center}
-Vengono quindi prodotti 10 distinti {\it strong classifier}, uno per cifra, in grado di distinguere se una data immagine \`e la cifra che sono stati allenati a riconoscere o no. Infine, usando una tecnica{\it one vs all} sui classificatori ottenuti, si produce un classificatore non binario in grado di determinare la cifra esatta data l'immagine.
+Vengono quindi prodotti 10 distinti {\it strong classifier}, uno per cifra, in grado di distinguere se una data immagine \`e la cifra che sono stati allenati a riconoscere o no. Infine, usando una tecnica ``{\it one vs all}'' sui classificatori ottenuti, si produce un classificatore non binario in grado di determinare la cifra esatta data l'immagine.
 Il dataset utilizzato \`e il MNIST\footnote{http://yann.lecun.com/exdb/mnist/}.
 \end{abstract}
