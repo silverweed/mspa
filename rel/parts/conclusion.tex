@@ -1,0 +1,7 @@
+\section{Conclusioni}
+
+La nostra implementazione di Adaboost ha prodotto risultati buoni, raggiungendo un test error compreso tra 0.01 e 0.04 per le singole cifre e 0.1 per {\it One vs All} con \(T = 250\). Aumentare ulteriormente $T$ non produce risultati sensibilmente migliori, quindi questo \`e da considerarsi il limite inferiore raggiungibile senza modifiche all'algoritmo e ai dati.
+
+Se un errore di classificazione ogni circa 10 esempi \`e considerato accettabile e le immagini in input sono di dimensioni ragionevolmente piccole, Adaboost con {\it decision stump} su singoli pixel \`e un metodo ragionevolmente semplice ed efficace per classificarle.
+
+Aggiungere degli step di preprocessing delle immagini ({\it deskewing}, {\it noise removal}, {\it blurring}, $\dotsc$) probabilmente contribuirebbe a ridurre ulteriormente il test error ottenibile.

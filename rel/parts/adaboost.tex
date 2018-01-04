@@ -43,4 +43,4 @@ e le $\mathbb{P}_i$ rappresentano le funzioni di probabilit\`a sullo spazio camp
 Il minimo dell'equazione \ref{eq:maggiorante} corrisponde a \(w = \frac{1}{2} \ln{\frac{1 - \varepsilon}{\varepsilon}}\), pertanto assegnamo questo valore al peso $w_i$ da dare al {\it weak learner} $h_i$ nella somma \ref{eq:strongclass}.
 Nella costruzione di tale somma vogliamo che ogni componente abbia un peso il pi\`u  diverso possibile da $1/2$, poich\'e questo corrisponde ad avere risposte pi\`u ``certe'' da parte dei singoli $h_i$.
 
-Per questa ragione, ad ogni passo Adaboost seleziona il prossimo classificatore $h$ da aggiungere alla somma in base al valore dell'$\varepsilon_i$ ad esso corrispondente. Il classificatore per cui \(|\varepsilon_i - 1/2|\) \`e massimo viene scelto.
+Per questa ragione, ad ogni passo Adaboost seleziona il prossimo classificatore $h_i$ da aggiungere alla somma in base al valore dell'$\varepsilon_i$ ad esso corrispondente. Il classificatore per cui \(|\varepsilon_i - 1/2|\) \`e massimo viene scelto.
